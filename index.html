@@ -198,6 +198,8 @@
   .topbar a:hover{ color:var(--gold); }
   .topbar .icon{ width:13px; height:13px; }
   .topbar-right a:not(:last-child){ border-right:1px solid rgba(255,255,255,.18); padding-right:22px; }
+  .topbar-cta span{ color:var(--gold); font-weight:600; margin-left:6px; }
+  .topbar-cta:hover span{ color:var(--white); }
 
   /* ============ HEADER / NAV ============ */
   header{ position:sticky; top:0; z-index:80; background:var(--espresso); border-bottom:1px solid rgba(255,255,255,.08); }
@@ -224,11 +226,11 @@
 
   .nav-actions{ display:flex; align-items:center; gap:10px; flex-shrink:0; }
   .search-field{
-    display:flex; align-items:center; gap:9px; width:190px; height:42px; box-sizing:border-box;
+    display:flex; align-items:center; gap:9px; width:230px; height:42px; box-sizing:border-box;
     padding:0 14px; border:1px solid rgba(255,255,255,.16); border-radius:var(--radius-sm);
     background:rgba(255,255,255,.06); transition:border-color var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), width var(--dur-2) var(--ease);
   }
-  .search-field:focus-within{ border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-14); width:240px; }
+  .search-field:focus-within{ border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-14); width:270px; }
   .search-field .icon{ width:16px; height:16px; color:rgba(255,255,255,.55); flex-shrink:0; }
   .search-field input{ border:0; background:transparent; outline:0; font-size:var(--small); color:var(--white); width:100%; font-family:var(--font-body); }
   .search-field input::placeholder{ color:rgba(255,255,255,.45); }
@@ -470,7 +472,7 @@
   .foot-address .icon{ margin-top:3px; flex-shrink:0; }
   .social-btn{ width:36px; height:36px; border-radius:7px; border:1px solid rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.03em; color:rgba(255,255,255,.7); transition:border-color var(--dur-2) var(--ease), color var(--dur-2) var(--ease), background var(--dur-2) var(--ease); }
   .social-btn:hover{ border-color:var(--gold); color:var(--gold); background:rgba(188,140,83,.1); }
-  .foot-col h6{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.4); margin:0 0 18px; font-weight:500; }
+  .foot-col h6{ font-family:var(--font-mono); font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.45); margin:0 0 18px; font-weight:500; }
   .foot-col ul{ display:flex; flex-direction:column; gap:11px; }
   .foot-col a{ font-size:var(--small); color:rgba(255,255,255,.72); transition:color var(--dur-2) var(--ease); }
   .foot-col a:hover{ color:var(--gold); }
@@ -595,8 +597,7 @@
       <a href="mailto:sales@montanadata.com"><svg class="icon" width="13" height="13"><use href="#i-mail"/></svg>sales@montanadata.com</a>
     </div>
     <div class="topbar-right">
-      <a href="#careers">Careers</a>
-      <a href="#quote">Request a Quote</a>
+      <a href="#contact" class="topbar-cta">Need Product Assistance? <span>Speak with an Expert</span></a>
     </div>
   </div>
 </div>
@@ -610,7 +611,6 @@
 
     <nav>
       <ul class="primary-nav">
-        <li><a class="nav-link" href="https://www.montanadata.com/">Home</a></li>
         <li><a class="nav-link" href="https://www.montanadata.com/product/">Products</a></li>
         <li><a class="nav-link" href="https://www.montanadata.com/vendors/">Vendors</a></li>
         <li><a class="nav-link" href="https://www.montanadata.com/resource-center/">Resource Center</a></li>
@@ -621,7 +621,7 @@
     <div class="nav-actions">
       <label class="search-field">
         <svg class="icon" width="16" height="16"><use href="#i-search"/></svg>
-        <input type="text" placeholder="Search products, manufacturers…" aria-label="Search products, manufacturers, and resources" />
+        <input type="text" placeholder="Search" aria-label="Search products, manufacturers, and resources" />
       </label>
       <a href="#quote" class="btn btn-primary">Request a Quote</a>
       <button class="icon-btn menu-toggle" id="menu-toggle" aria-label="Open menu" aria-expanded="false">
