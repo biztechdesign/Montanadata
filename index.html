@@ -450,10 +450,16 @@
   .testi-track::-webkit-scrollbar{ display:none; }
   .testi-track.is-dragging{ cursor:grabbing; scroll-snap-type:none; }
   .testi-card{
-    position:relative; flex:0 0 380px; scroll-snap-align:start;
+    position:relative; flex:0 0 auto; width:calc((100% - 56px)/3); scroll-snap-align:start;
     background:var(--white); border:1px solid var(--stone); border-radius:16px; box-shadow:var(--shadow-sm);
-    padding:32px; display:flex; flex-direction:column;
+    padding:32px; display:flex; flex-direction:column; box-sizing:border-box;
     transition:transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease);
+  }
+  @media (max-width:1080px){
+    .testi-card{ width:calc((100% - 28px)/2); }
+  }
+  @media (max-width:620px){
+    .testi-card{ width:100%; }
   }
   @media (hover:hover){
     .testi-card:hover{ transform:translateY(-8px); box-shadow:var(--shadow-lg); }
