@@ -1,6 +1,6 @@
 <title>Montana Data — Electrical, Data &amp; Industrial Distribution</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="preload" as="image" href="img/banner.png" />
+<link rel="preload" as="image" href="img/hero-poster.jpg" fetchpriority="high" />
 <style>
   /* ============ FONTS ============ */
   @font-face{
@@ -68,12 +68,62 @@
     --container: 1320px;
     --edge: clamp(20px, 5vw, 64px);
     --sec-pad: clamp(48px, 6vw, 96px);
+
+    /* ---- Hero scroll scene ----------------------------------------------
+       Single source of truth for the scroll-driven hero. Everything the
+       scene animates is expressed as a start value (implicit 0 progress)
+       and one of the --hero-frame-* end values below, interpolated in CSS
+       by the normalized progress the scroll module writes to --hero-p. */
+    --header-h: 74px;               /* measured at runtime, this is the fallback */
+    --topbar-h: 38px;
+    --hero-scene-len: 155svh;       /* outer scroll section: stage + travel   */
+    --hero-stage-h: 100svh;
+
+    /* Geometry of the framed "media card" at the end of the transformation */
+    --hero-frame-inset-x: 4vw;
+    --hero-frame-top: calc(var(--header-h) + 30px);
+    --hero-frame-bottom: 42px;
+    --hero-frame-radius: 26px;
+    --hero-video-zoom: .06;         /* extra scale on the video at progress 0 */
+
+    /* Atmospheric background revealed as the video contracts. Walnut/bronze
+       family so the hero reads as the same material as the rest of the brand,
+       and so the navigation can carry the identical gradient. */
+    --atmos-ink:    #140D07;
+    --atmos-walnut: #2B1D11;
+    --atmos-bronze: #3E2A17;
+    --atmos-deep:   #110B06;
+    --atmos-gradient: linear-gradient(168deg,
+      var(--atmos-ink)    0%,
+      var(--atmos-walnut) 34%,
+      var(--atmos-bronze) 62%,
+      var(--atmos-deep)   100%);
+
+    /* Readability scrim: --gold (#BC8C53) taken down to ~16% brightness, so the
+       overlay is a dark shade of the CTA colour rather than a neutral black.
+       Kept as one ink so every stop below stays in the same family. */
+    --hero-scrim-rgb: 30, 22, 13;
+    /* On-video tint of --gold. The brand gold does not clear AA against the
+       scrimmed footage at its brightest frames; this tint does, without
+       darkening the video any further. */
+    --gold-on-video: #E0B478;
   }
+
+  /* Typed registration keeps the per-frame custom-property writes on the
+     fast path (no re-parse of the whole declaration on every scroll frame).
+     Non-inheriting on purpose: each value is written to the one element
+     whose small subtree needs it. Ignored gracefully by older engines. */
+  @property --hero-p        { syntax:'<number>'; inherits:true; initial-value:0; }
+  @property --hero-content-p{ syntax:'<number>'; inherits:true; initial-value:0; }
+  @property --hero-cue-p    { syntax:'<number>'; inherits:true; initial-value:0; }
+  @property --header-glass  { syntax:'<number>'; inherits:true; initial-value:0; }
+  @property --header-solid  { syntax:'<number>'; inherits:true; initial-value:0; }
+  @property --topbar-collapse{ syntax:'<number>'; inherits:true; initial-value:0; }
 
   /* Brand is a fixed light identity per client spec — intentionally single-theme. */
 
   *,*::before,*::after{ box-sizing:border-box; }
-  html{ scroll-behavior:smooth; overflow-x:hidden; }
+  html{ scroll-behavior:smooth; overflow-x:clip; }
   @media (prefers-reduced-motion: reduce){
     html{ scroll-behavior:auto; }
     *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
@@ -87,7 +137,7 @@
     line-height:1.7;
     -webkit-font-smoothing:antialiased;
     text-rendering:optimizeLegibility;
-    overflow-x:hidden;
+    overflow-x:clip;
   }
   img,svg{ display:block; max-width:100%; }
   a{ color:inherit; text-decoration:none; }
@@ -183,14 +233,17 @@
 
   /* ============ TOP UTILITY BAR ============ */
   .topbar{
-    background:var(--espresso); color:rgba(255,255,255,.72);
+    background:transparent; color:rgba(255,255,255,.72);
     font-size:var(--micro); font-family:var(--font-mono);
-    max-height:38px; overflow:hidden;
-    border-bottom:1px solid rgba(255,255,255,.1);
-    transition:max-height var(--dur-3) var(--ease), opacity var(--dur-2) var(--ease);
+    overflow:hidden;
+    /* Collapse is scroll-driven (see --topbar-collapse) rather than a timed
+       class transition, so it tracks the pointer exactly like the rest of
+       the scene and reverses the instant the user scrolls back up. */
+    max-height:calc(var(--topbar-h) * (1 - var(--topbar-collapse, 0)));
+    opacity:calc(1 - var(--topbar-collapse, 0));
+    border-bottom:1px solid rgba(255,255,255, calc(.1 * var(--header-solid, 0)));
   }
-  .topbar.is-collapsed{ max-height:0; opacity:0; }
-  .topbar .container{ display:flex; align-items:center; justify-content:space-between; height:38px; gap:16px; }
+  .topbar .container{ display:flex; align-items:center; justify-content:space-between; height:var(--topbar-h); gap:16px; }
   .topbar-left, .topbar-right{ display:flex; align-items:center; gap:22px; }
   .topbar a{ display:inline-flex; align-items:center; gap:7px; transition:color var(--dur-2) var(--ease); letter-spacing:.02em; }
   .topbar a:hover{ color:var(--gold); }
@@ -200,10 +253,51 @@
   .topbar-cta:hover span{ color:var(--white); }
 
   /* ============ HEADER / NAV ============ */
-  header{ position:sticky; top:0; z-index:80; background:var(--espresso); border-bottom:1px solid rgba(255,255,255,.08); }
-  .nav-wrap{ position:relative; display:flex; align-items:center; justify-content:space-between; gap:20px; padding-block:16px; transition:padding var(--dur-2) var(--ease); }
-  header.is-stuck .nav-wrap{ padding-block:11px; }
-  header.is-stuck{ box-shadow:var(--shadow-lg); }
+  /* The topbar + header travel together as one fixed overlay so the hero can
+     run full-bleed underneath them. The shell keeps a constant height for the
+     whole scene: only its *background* changes, never its box. */
+  .site-shell{
+    position:fixed; inset:0 0 auto 0; z-index:80;
+    isolation:isolate;
+  }
+  /* Glass: a tinted, blurred sheet whose lower edge dissolves into the hero. */
+  .site-shell::before{
+    content:''; position:absolute; inset:0 0 -38px 0; z-index:-1; pointer-events:none;
+    opacity:var(--header-glass, 0);
+    background:linear-gradient(180deg,
+      rgba(20,13,7,.76) 0%,
+      rgba(43,29,17,.56) 44%,
+      rgba(43,29,17,.22) 74%,
+      rgba(43,29,17,0)   100%);
+    -webkit-backdrop-filter:blur(12px) saturate(125%);
+    backdrop-filter:blur(12px) saturate(125%);
+    -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 58%,transparent 100%);
+    mask-image:linear-gradient(180deg,#000 0%,#000 58%,transparent 100%);
+  }
+  /* Solid: takes over once the hero has scrolled away and light sections
+     pass under the nav. Cross-fades with the glass, never snaps. */
+  .site-shell::after{
+    content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+    opacity:var(--header-solid, 0);
+    /* Same ramp as the hero atmosphere, sized to the shell, so the navigation
+       and the hero background read as one continuous surface. */
+    background:var(--atmos-gradient);
+    background-size:100% 420px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    box-shadow:var(--shadow-lg);
+  }
+  .site-shell.no-glass::before{ display:none; }   /* drop the blur layer entirely when invisible */
+  .site-shell.no-solid::after{ display:none; }
+
+  header{ position:relative; z-index:1; background:transparent; border-bottom:0; }
+
+  /* In-page anchor targets must clear the fixed shell, which no longer takes
+     up flow space. #top is excluded on purpose: it should land at zero. */
+  #categories, #industries, #quote, #contact{ scroll-margin-top:calc(var(--header-h) + 16px); }
+  .nav-wrap{
+    position:relative; display:flex; align-items:center; justify-content:space-between;
+    gap:20px; padding-block:16px; min-height:var(--header-h);
+  }
 
   .logo{ display:flex; align-items:center; gap:11px; flex-shrink:0; }
   .logo img{ height:34px; width:auto; display:block; }
@@ -248,23 +342,128 @@
   .icon-btn .icon{ width:18px; height:18px; }
   .menu-toggle{ display:none; position:relative; z-index:121; }
 
-  /* ============ HERO ============ */
-  .hero{
-    position:relative; background:var(--walnut) url('img/banner.png') center right / cover no-repeat; color:var(--white); overflow:hidden;
-    padding-block: clamp(56px,8vw,96px) clamp(64px,9vw,120px);
+  /* ============ HERO SCROLL SCENE ============
+     Layer order inside the scene (all explicit, none implicit):
+       0  .hero-scene   scroll track (taller than the viewport)
+       1  .hero-atmos   atmospheric gradient canvas
+       2  .hero-frame   animated media container - clips everything inside
+            1  .hero-media / video
+            2  .hero-readability  left-weighted scrim
+            3  .hero-content      copy + CTAs
+       3  .hero-scroll-cue
+       80 .site-shell   navigation
+     ------------------------------------------------------------------- */
+  .hero-scene{
+    position:relative;
+    height:var(--hero-scene-len);
+    background:var(--atmos-deep);
+    color:var(--white);
   }
-  .hero::after{
-    content:''; position:absolute; right:-10%; top:-15%; width:60%; height:130%;
-    background:radial-gradient(circle at center, rgba(188,140,83,.16), transparent 62%);
-    pointer-events:none;
+  .hero-stage{
+    position:sticky; top:0;
+    height:var(--hero-stage-h);
+    overflow:hidden;
   }
-  .hero .container{ position:relative; display:block; }
-  .hero-copy{ max-width:620px; }
-  .hero-copy .eyebrow{ color:var(--gold); }
-  .hero-copy .eyebrow::before{ background:var(--gold); }
-  .hero-copy h1{ color:var(--white); font-size:2.75rem; }
-  .hero-copy .lede{ color:rgba(255,255,255,.72); font-size:var(--body-lg); }
+
+  /* 1 - atmospheric canvas. Present from the very first frame; the video simply
+     stops covering it as it contracts, so the colour appears to bloom outward. */
+  .hero-atmos{
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:
+      radial-gradient(78% 62% at 14% 4%,   rgba(188,140,83,.20), transparent 62%),
+      radial-gradient(72% 58% at 88% 18%,  rgba(146,92,44,.34),  transparent 64%),
+      radial-gradient(64% 54% at 62% 106%, rgba(214,164,100,.18), transparent 66%),
+      radial-gradient(48% 42% at 4% 94%,   rgba(96,58,28,.34),   transparent 70%),
+      var(--atmos-gradient);
+  }
+
+  /* 2 - the media card. Insets interpolate from 0 (full bleed) to the framed
+     geometry; nothing here is a magic number, they all resolve from tokens. */
+  .hero-frame{
+    position:absolute; z-index:2; overflow:hidden;
+    background:var(--atmos-ink);
+    /* The insets below change every scroll frame; containment keeps that
+       relayout inside the card instead of dirtying the rest of the stage. */
+    contain:layout;
+    top:    calc(var(--hero-p, 0) * var(--hero-frame-top));
+    left:   calc(var(--hero-p, 0) * var(--hero-frame-inset-x));
+    right:  calc(var(--hero-p, 0) * var(--hero-frame-inset-x));
+    bottom: calc(var(--hero-p, 0) * var(--hero-frame-bottom));
+    border-radius:calc(var(--hero-p, 0) * var(--hero-frame-radius));
+    box-shadow:0 calc(var(--hero-p, 0) * 34px) calc(var(--hero-p, 0) * 78px)
+               rgba(2,10,16, calc(var(--hero-p, 0) * .34));
+  }
+
+  .hero-media{ position:absolute; inset:0; z-index:1; }
+  .hero-video{
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover; object-position:center;
+    background:var(--atmos-ink);
+    /* Composited counter-zoom: the frame pulls in while the image eases out of
+       its crop, which is what sells "contracting" rather than "resizing". */
+    transform:scale(calc(1 + var(--hero-video-zoom) - var(--hero-p, 0) * var(--hero-video-zoom)));
+    will-change:transform;
+  }
+
+  /* 3 - readability scrim. Lives inside the frame, so it contracts and rounds
+     with the video instead of staying pinned to the viewport. */
+  /* Stop values are not eyeballed: they are the alphas needed to hold WCAG AA
+     against the brightest frames of this particular footage (a well-lit
+     warehouse), measured by compositing the scrim over sampled video pixels.
+     The flat base is deliberately light - the left wash does the real work. */
+  .hero-readability{
+    position:absolute; inset:0; z-index:2; pointer-events:none;
+    background:
+      linear-gradient(90deg,
+        rgba(var(--hero-scrim-rgb),.92) 0%,
+        rgba(var(--hero-scrim-rgb),.86) 18%,
+        rgba(var(--hero-scrim-rgb),.74) 36%,
+        rgba(var(--hero-scrim-rgb),.58) 54%,
+        rgba(var(--hero-scrim-rgb),.30) 72%,
+        rgba(var(--hero-scrim-rgb),.08) 88%,
+        rgba(var(--hero-scrim-rgb),0)   100%),
+      linear-gradient(rgba(var(--hero-scrim-rgb),.24), rgba(var(--hero-scrim-rgb),.24));
+  }
+  /* Nav scrim: measured in px off the real header height so it always covers
+     the navigation band, and eased back as the frame contracts, because past
+     that point the header has its own glass sheet and the card should not
+     carry a heavy dark edge. */
+  .hero-readability::before{
+    content:''; position:absolute; inset:0;
+    opacity:calc(1 - var(--hero-p, 0) * .6);
+    background:linear-gradient(180deg,
+      rgba(var(--hero-scrim-rgb),.78) 0,
+      rgba(var(--hero-scrim-rgb),.56) calc(var(--header-h) + 28px),
+      rgba(var(--hero-scrim-rgb),0)   calc(var(--header-h) + 180px));
+  }
+
+  /* 4 - copy. Its box is pinned to the *stage* width, not the frame width, so
+     the headline can never re-wrap mid-animation; it rides inward because it
+     is positioned inside the frame, and is clipped by the frame's radius. */
+  .hero-content{
+    position:absolute; z-index:3; top:0; left:0; height:100%;
+    width:var(--hero-stage-w, 100%);
+    display:flex; align-items:center;
+    contain:layout style;
+  }
+  .hero-content .container{ width:100%; }
+  .hero-copy{
+    max-width:640px;
+    transform:translate3d(0, calc(var(--hero-content-p, 0) * -26px), 0);
+    opacity:calc(1 - var(--hero-content-p, 0) * .34);
+    will-change:transform;
+  }
+  .hero-copy .eyebrow{ color:var(--gold-on-video); }
+  .hero-copy .eyebrow::before{ background:var(--gold-on-video); }
+  .hero-copy h1{
+    color:var(--white);
+    font-size:clamp(2.375rem, 1.15rem + 3.3vw, 4rem);
+    text-shadow:0 1px 32px rgba(var(--hero-scrim-rgb),.35);
+  }
+  .hero-copy .lede{ color:rgba(255,255,255,.9); font-size:var(--body-lg); }
   .hero-ctas{ display:flex; flex-wrap:wrap; gap:14px; margin-top:34px; }
+  .hero-scene .btn-secondary{ background:transparent; color:var(--white); border-color:rgba(255,255,255,.45); }
+  .hero-scene .btn-secondary:hover{ background:var(--white); color:var(--walnut); border-color:var(--white); }
 
   /* ============ STATS ============ */
   .stats-strip{ background:var(--ivory); border-block:1px solid var(--stone); }
@@ -607,6 +806,7 @@
     .stat-item:first-child{ border-top:0; }
     .footer-top{ grid-template-columns:1fr; padding-block:40px; }
     .hero-ctas .btn{ width:100%; }
+    .hero-copy .lede{ font-size:var(--body); }
     footer .footer-bottom{ flex-direction:column; align-items:flex-start; gap:12px; }
   }
 
@@ -617,25 +817,20 @@
   .split-mask{ overflow:hidden; display:inline-block; vertical-align:top; }
   .split-mask-inner{ display:inline-block; will-change:transform; }
 
-  /* Hero background/scrim layers (image lives here so it can scale/parallax independently) */
-  .hero{ background:var(--walnut); }
-  .hero-bg{
-    position:absolute; inset:0; z-index:0;
-    background:url('img/banner.png') center right / cover no-repeat;
-    will-change:transform;
-  }
-  .hero-scrim{
-    position:absolute; inset:0; z-index:0; pointer-events:none;
-    background:linear-gradient(100deg, rgba(36,26,19,.5) 0%, rgba(36,26,19,.2) 42%, rgba(36,26,19,0) 68%);
-  }
-  .hero .container{ z-index:1; }
   .hero-copy .eyebrow{ opacity:1; }
 
+  /* Scroll cue: the outer element carries the scroll-driven fade, the inner one
+     carries the intro fade, so the two never fight over the same property. */
   .hero-scroll-cue{
     position:absolute; left:50%; bottom:26px; transform:translateX(-50%);
+    z-index:3; pointer-events:none;
+    opacity:calc(1 - var(--hero-cue-p, 0));
+  }
+  .hero-scroll-cue-inner{
     display:flex; flex-direction:column; align-items:center; gap:9px;
-    color:rgba(255,255,255,.55); font-family:var(--font-mono); font-size:10px;
-    letter-spacing:.14em; text-transform:uppercase; opacity:0; z-index:1; pointer-events:none;
+    color:rgba(255,255,255,.72); font-family:var(--font-mono); font-size:10px;
+    text-shadow:0 1px 10px rgba(var(--hero-scrim-rgb),.7);
+    letter-spacing:.14em; text-transform:uppercase; opacity:0;
   }
   .hero-scroll-cue-line{ width:1px; height:26px; position:relative; overflow:hidden; background:rgba(255,255,255,.18); }
   .hero-scroll-cue-line::after{
@@ -654,7 +849,82 @@
   .news-visual-img{ position:absolute; inset:0; background-size:cover; background-position:center; will-change:transform; transition:transform var(--dur-3) var(--ease); }
   .news-visual:hover .news-visual-img{ transform:scale(1.05); }
 
+  /* ---- Hero scene: responsive geometry -------------------------------- */
+  @media (max-width:1180px){
+    :root{
+      --hero-scene-len:150svh;
+      --hero-frame-inset-x:2.6vw;
+      --hero-frame-top:calc(var(--header-h) + 20px);
+      --hero-frame-bottom:32px;
+      --hero-frame-radius:20px;
+      --hero-video-zoom:.045;
+    }
+  }
+  @media (max-width:768px){
+    :root{
+      --hero-scene-len:142svh;
+      --hero-frame-inset-x:12px;
+      --hero-frame-top:calc(var(--header-h) + 14px);
+      --hero-frame-bottom:20px;
+      --hero-frame-radius:18px;
+      --hero-video-zoom:.03;
+    }
+    /* Portrait video crops hard on the sides, so readability shifts from a
+       left-weighted wash to a bottom-weighted one under the stacked copy.
+       The ramp holds near-full strength up to 62% because the copy is
+       bottom-aligned here: its topmost element is the gold eyebrow, which has
+       the least contrast headroom of anything in the hero. */
+    .hero-readability{
+      background:
+        linear-gradient(0deg,
+          rgba(var(--hero-scrim-rgb),.95) 0%,
+          rgba(var(--hero-scrim-rgb),.92) 34%,
+          rgba(var(--hero-scrim-rgb),.84) 62%,
+          rgba(var(--hero-scrim-rgb),.46) 84%,
+          rgba(var(--hero-scrim-rgb),.14) 100%),
+        linear-gradient(rgba(var(--hero-scrim-rgb),.26), rgba(var(--hero-scrim-rgb),.26));
+    }
+    .hero-content{ align-items:flex-end; }
+    .hero-copy{ padding-bottom:clamp(56px, 12svh, 104px); }
+  }
+
+  /* ---- Short viewports (landscape phones, small laptops) --------------
+     The card's height is what squeezes here, not its width, so this tier is
+     keyed on height alone and must follow the width tiers above it. Without
+     it the copy is taller than the framed card and gets clipped by it. */
+  @media (max-height:640px){
+    :root{
+      --hero-frame-top:calc(var(--header-h) + 12px);
+      --hero-frame-bottom:16px;
+    }
+    .hero-content{
+      align-items:center;
+      /* While the card still runs under the nav, centre the copy in the area
+         below it; once framed, the card already clears the nav so this
+         relaxes to zero and the copy centres in the card itself. */
+      padding-top:calc((1 - var(--hero-p, 0)) * (var(--header-h) + 8px));
+    }
+    .hero-copy{ padding-bottom:0; }
+    .hero-copy .eyebrow{ margin-bottom:8px; }
+    .hero-copy h1{ font-size:clamp(1.5rem, .9rem + 2.2vw, 2.25rem); }
+    .hero-copy .lede{ font-size:var(--small); margin-top:10px; }
+    .hero-ctas{ margin-top:18px; gap:10px; }
+    .hero-ctas .btn{ padding:11px 20px; font-size:var(--small); }
+    .hero-scroll-cue{ display:none; }
+  }
+
+  /* ---- Reduced motion --------------------------------------------------
+     No scroll-driven contraction at all: the hero renders directly in its
+     framed state, the scene collapses to a single viewport (so there is no
+     dead scroll), and the video holds on its poster frame instead of
+     looping. All copy, CTAs and navigation are unchanged. */
   @media (prefers-reduced-motion: reduce){
+    :root{ --hero-scene-len:var(--hero-stage-h); }
+    .hero-stage{ position:relative; }
+    .hero-frame{ transition:none; }
+    .hero-video{ transform:none; will-change:auto; }
+    .hero-copy{ transform:none; opacity:1; will-change:auto; }
+    .site-shell::before{ -webkit-backdrop-filter:none; backdrop-filter:none; }
     .hero-scroll-cue-line::after{ animation:none; }
     .hero-scroll-cue{ display:none; }
   }
@@ -722,6 +992,9 @@
   <symbol id="i-youtube" viewBox="0 0 24 24" fill="currentColor" stroke="none" fill-rule="evenodd" clip-rule="evenodd"><path d="M2 8a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4zm8.5 1.5v5l4.3-2.5z"/></symbol>
 </svg>
 
+<!-- ============ FIXED NAVIGATION SHELL (top bar + header) ============ -->
+<div class="site-shell no-glass no-solid" id="site-shell">
+
 <!-- ============ TOP UTILITY BAR ============ -->
 <div class="topbar" id="topbar">
   <div class="container">
@@ -764,26 +1037,78 @@
   </div>
 </header>
 
-<!-- ============ HERO ============ -->
-<section class="hero" id="top">
-  <div class="hero-bg" data-hero="bg" aria-hidden="true"></div>
-  <div class="hero-scrim" aria-hidden="true"></div>
-  <div class="container">
-    <div class="hero-copy">
-      <div class="eyebrow" data-hero="eyebrow">Trusted Since 1996</div>
-      <h1 data-hero="heading">Complete Solutions for Every Project</h1>
-      <p class="lede" data-hero="lede">A comprehensive range of trusted products for commercial, industrial, and infrastructure projects, backed by quality and expert service.</p>
-      <div class="hero-ctas" data-hero="ctas">
-        <a href="#categories" class="btn btn-primary btn-lg">Explore Product Categories <svg class="icon arrow" width="16" height="16"><use href="#i-arrow-right"/></svg></a>
-        <a href="#contact" class="btn btn-secondary btn-lg">Talk to a Sales Expert</a>
+</div><!-- /.site-shell -->
+
+<!-- ============ HERO SCROLL SCENE ============
+     The outer <section> is only a scroll track: it is taller than the viewport
+     so that the sticky stage inside it stays put while the reader scrolls, and
+     that travel distance is what the scroll module normalizes into progress. -->
+<section class="hero-scene" id="top">
+  <div class="hero-stage" id="hero-stage">
+
+    <!-- Atmospheric background, always present beneath the media -->
+    <div class="hero-atmos" aria-hidden="true"></div>
+
+    <!-- Animated media container: video + scrim + copy contract together -->
+    <div class="hero-frame" id="hero-frame">
+      <div class="hero-media" data-hero="media">
+        <video
+          class="hero-video"
+          id="hero-video"
+          autoplay
+          muted
+          loop
+          playsinline
+          disablepictureinpicture
+          preload="metadata"
+          poster="img/hero-poster.jpg"
+          aria-hidden="true"
+          tabindex="-1"
+          data-src="img/hero-warehouse.mp4"
+          data-src-sm="img/hero-warehouse-sm.mp4"></video>
+      </div>
+
+      <div class="hero-readability" aria-hidden="true"></div>
+
+      <div class="hero-content">
+        <div class="container">
+          <div class="hero-copy">
+            <div class="eyebrow" data-hero="eyebrow">Trusted Since 1996</div>
+            <h1 data-hero="heading">Complete Solutions for Every Project</h1>
+            <p class="lede" data-hero="lede">A comprehensive range of trusted products for commercial, industrial, and infrastructure projects, backed by quality and expert service.</p>
+            <div class="hero-ctas" data-hero="ctas">
+              <a href="#categories" class="btn btn-primary btn-lg">Explore Product Categories <svg class="icon arrow" width="16" height="16"><use href="#i-arrow-right"/></svg></a>
+              <a href="#contact" class="btn btn-secondary btn-lg">Talk to a Sales Expert</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-scroll-cue" aria-hidden="true">
+      <div class="hero-scroll-cue-inner" data-hero="cue">
+        <span>Scroll</span>
+        <span class="hero-scroll-cue-line"></span>
       </div>
     </div>
   </div>
-  <div class="hero-scroll-cue" data-hero="cue" aria-hidden="true">
-    <span>Scroll</span>
-    <span class="hero-scroll-cue-line"></span>
-  </div>
 </section>
+<script>
+/* Source selection runs inline, immediately after the element, so the fetch
+   starts in the same parser pass rather than waiting on DOMContentLoaded.
+   Data Saver / 2G and reduced-motion users keep the poster and skip the
+   download entirely. */
+(function(){
+  var v = document.getElementById('hero-video');
+  if (!v) return;
+  var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  var frugal = !!(conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || '')));
+  var still  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (frugal || still) { v.removeAttribute('autoplay'); v.removeAttribute('loop'); return; }
+  var small = window.matchMedia('(max-width: 860px)').matches;
+  v.src = v.getAttribute(small ? 'data-src-sm' : 'data-src');
+})();
+</script>
 
 <!-- ============ TRUST STRIP ============ -->
 <div class="stats-strip">
@@ -1273,16 +1598,175 @@
 (function(){
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  // Sticky header + topbar collapse
-  var header = document.getElementById('site-header');
-  var topbar = document.getElementById('topbar');
-  var lastY = 0;
-  window.addEventListener('scroll', function(){
-    var y = window.scrollY;
-    header.classList.toggle('is-stuck', y > 8);
-    topbar.classList.toggle('is-collapsed', y > 80);
-    lastY = y;
-  }, { passive:true });
+  /* ==================================================================
+     HERO SCROLL SCENE
+     Drives the full-bleed video -> framed media card transformation and
+     the transparent -> glass -> solid navigation handoff.
+
+     Everything is a pure function of the current scroll offset: there is
+     no easing over time, no inertia and no tween queue, so the animation
+     stops the instant scrolling stops and reverses on the way back up.
+
+     Reads (layout-dirtying) happen only in measure(); the rAF frame does
+     writes only, which keeps the loop free of forced synchronous layout.
+     ================================================================== */
+  (function(){
+    var scene  = document.getElementById('top');
+    var stage  = document.getElementById('hero-stage');
+    var shell  = document.getElementById('site-shell');
+    var header = document.getElementById('site-header');
+    if (!scene || !stage || !shell || !header) return;
+
+    // Normalized keyframes along the scene's scroll travel. The media
+    // transformation is the primary gesture; everything else is timed to
+    // stay out of its way.
+    var KEY = {
+      topbar : [0.00, 0.09],   // utility bar folds away first
+      glass  : [0.02, 0.20],   // nav picks up its glass sheet
+      frame  : [0.04, 0.44],   // full bleed -> framed card
+      content: [0.30, 0.95],   // very slight copy drift, deliberately late
+      cue    : [0.00, 0.16]
+    };
+    // Distance (px) over which the nav cross-fades to solid as the hero's
+    // bottom edge approaches it and light sections start passing underneath.
+    var HANDOFF = 240;
+
+    var root = document.documentElement;
+    var still = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    var travel = 1, sceneTop = 0, sceneH = 0, headerH = 74;
+    var queued = false, written = {};
+
+    function clamp01(v){ return v < 0 ? 0 : v > 1 ? 1 : v; }
+    function span(v, a, b){ return clamp01((v - a) / (b - a)); }
+    function smooth(t){ return t * t * (3 - 2 * t); }  // smoothstep: no overshoot, settles softly
+
+    function put(el, name, value){
+      var k = name + '@' + (el === root ? 'r' : el === shell ? 's' : 'c');
+      if (written[k] === value) return;      // avoid redundant style writes
+      written[k] = value;
+      el.style.setProperty(name, value);
+    }
+
+    // --- reads only -------------------------------------------------------
+    function measure(){
+      headerH  = header.offsetHeight;
+      sceneH   = scene.offsetHeight;
+      sceneTop = scene.getBoundingClientRect().top + (window.scrollY || window.pageYOffset);
+      travel   = Math.max(1, sceneH - stage.offsetHeight);
+      var stageW = stage.clientWidth;
+      put(root, '--header-h', headerH + 'px');
+      put(root, '--hero-stage-w', stageW + 'px');
+      return headerH + ':' + stageW;
+    }
+
+    // --- writes only ------------------------------------------------------
+    function render(){
+      queued = false;
+      var y = window.scrollY || window.pageYOffset;
+      var p = clamp01((y - sceneTop) / travel);
+
+      // Distance from the viewport top to the bottom of the whole scene,
+      // derived arithmetically so no layout read is needed here.
+      var sceneBottom = sceneTop + sceneH - y;
+      var solid = clamp01(1 - (sceneBottom - headerH) / HANDOFF);
+      var glass = span(p, KEY.glass[0], KEY.glass[1]) * (1 - solid);
+
+      put(scene, '--hero-p',         smooth(span(p, KEY.frame[0], KEY.frame[1])).toFixed(4));
+      put(scene, '--hero-content-p', smooth(span(p, KEY.content[0], KEY.content[1])).toFixed(4));
+      put(scene, '--hero-cue-p',     span(p, KEY.cue[0], KEY.cue[1]).toFixed(3));
+
+      put(shell, '--topbar-collapse', smooth(span(p, KEY.topbar[0], KEY.topbar[1])).toFixed(3));
+      put(shell, '--header-glass',    glass.toFixed(3));
+      put(shell, '--header-solid',    solid.toFixed(3));
+
+      // Fully invisible background layers are taken out of the paint tree so
+      // the backdrop-filter isn't composited for nothing on every frame.
+      shell.classList.toggle('no-glass', glass < 0.002);
+      shell.classList.toggle('no-solid', solid < 0.002);
+    }
+
+    var frame = render;   // swapped for renderStatic under reduced motion
+
+    function onScroll(){
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(frame);
+    }
+
+    // A ResizeObserver is the trigger rather than window.onresize because it
+    // also catches scrollbar changes, zoom and font-driven header reflow.
+    // Height-only viewport changes are mobile browser chrome showing/hiding:
+    // svh already accounts for those and re-measuring on them causes jitter,
+    // so a re-measure only counts when the measured signature actually moves.
+    var signature = '';
+    function remeasure(){
+      var next = measure();
+      if (next === signature) return;
+      signature = next;
+      onScroll();
+    }
+
+    // --- reduced motion ---------------------------------------------------
+    // The scene renders statically in its framed state. A minimal listener is
+    // kept so the nav still becomes solid over light content further down.
+    function renderStatic(){
+      queued = false;
+      var y = window.scrollY || window.pageYOffset;
+      var sceneBottom = sceneTop + sceneH - y;
+      var solid = clamp01(1 - (sceneBottom - headerH) / HANDOFF);
+      put(shell, '--header-solid', solid.toFixed(3));
+      shell.classList.toggle('no-solid', solid < 0.002);
+    }
+
+    var mode = null;
+    function apply(){
+      var reduced = still.matches;
+      if (mode === reduced) return;
+      mode = reduced;
+      written = {};
+      window.removeEventListener('scroll', onScroll);
+      frame = reduced ? renderStatic : render;
+      if (reduced) {
+        put(scene, '--hero-p', '1');
+        put(scene, '--hero-content-p', '0');
+        put(scene, '--hero-cue-p', '1');
+        put(shell, '--topbar-collapse', '0');
+        put(shell, '--header-glass', '1');
+        shell.classList.remove('no-glass');
+      }
+      window.addEventListener('scroll', onScroll, { passive:true });
+      measure();
+      frame();
+    }
+
+    apply();
+    signature = measure();
+    if (still.addEventListener) still.addEventListener('change', function(){ mode = null; apply(); });
+
+    if (typeof ResizeObserver === 'function') {
+      var ro = new ResizeObserver(remeasure);
+      ro.observe(stage);
+      ro.observe(header);
+    }
+    // Kept alongside the observer, not instead of it: the signature guard makes
+    // the duplicate call free, and this still covers engines where observer
+    // delivery is deferred (background tabs, throttled rendering).
+    window.addEventListener('resize', remeasure, { passive:true });
+    window.addEventListener('orientationchange', remeasure);
+
+    // A frame requested while the page was not rendering never runs, which
+    // would otherwise leave the loop latched. Re-arm it when we come back.
+    document.addEventListener('visibilitychange', function(){
+      if (document.visibilityState !== 'visible') return;
+      queued = false;
+      remeasure();
+      onScroll();
+    });
+    // Fonts and the poster settle after first paint and can shift header height.
+    window.addEventListener('load', remeasure);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasure);
+  })();
 
   // Active nav link (scroll-spy)
   var navLinks = Array.prototype.slice.call(document.querySelectorAll('.primary-nav > li > a.nav-link[href^="#"]'));
@@ -1518,7 +2002,7 @@
   // GSAP failed to load (CDN blocked/offline): reveal everything immediately so
   // nothing stays hidden, then stop — no animation, but a fully usable page.
   if (typeof window.gsap === 'undefined' || typeof window.ScrollTrigger === 'undefined') {
-    document.querySelectorAll('[data-animate]').forEach(function(el){
+    document.querySelectorAll('[data-animate], [data-hero]').forEach(function(el){
       el.style.opacity = '1';
       el.style.transform = 'none';
       el.style.clipPath = 'none';
@@ -1641,31 +2125,30 @@
   }
 
   /* ============================================================
-     Waits for the hero background image to actually be decoded
-     before starting the reveal timeline — otherwise a large image
-     can still be downloading when the clip-path wipe finishes,
-     so it just pops in fully-open instead of visibly wiping.
-     Falls back to a short timeout so a slow/failed load never
+     Waits for the hero video to have a decodable frame before
+     starting the reveal wipe — otherwise the wipe can finish while
+     the media is still buffering, so it just pops in fully-open.
+     Falls back to a short timeout so a slow or failed load never
      blocks the intro sequence indefinitely.
   ============================================================ */
-  function whenHeroImageReady(src, cb){
+  function whenHeroMediaReady(cb){
     var done = false;
     function finish(){ if (done) return; done = true; cb(); }
-    var img = new Image();
-    img.onload = finish;
-    img.onerror = finish;
-    img.src = src;
-    if (img.complete) finish();
-    setTimeout(finish, 700);
+    var v = document.getElementById('hero-video');
+    if (!v) { finish(); return; }
+    if (v.readyState >= 2) finish();
+    v.addEventListener('loadeddata', finish, { once:true });
+    v.addEventListener('error', finish, { once:true });
+    setTimeout(finish, 900);
   }
 
   /* ============================================================
      HERO — coordinated opening timeline (plays once, on load)
   ============================================================ */
   function initHeroIntro(){
-    var hero = document.querySelector('.hero');
+    var hero = document.querySelector('.hero-scene');
     if (!hero) return;
-    var bg = hero.querySelector('[data-hero="bg"]');
+    var bg = hero.querySelector('[data-hero="media"]');
     var eyebrow = hero.querySelector('[data-hero="eyebrow"]');
     var heading = hero.querySelector('[data-hero="heading"]');
     var lede = hero.querySelector('[data-hero="lede"]');
@@ -1685,7 +2168,7 @@
     if (stats) gsap.set(stats.children, { opacity: 0, y: Y.small });
     gsap.set(cue, { opacity: 0 });
 
-    whenHeroImageReady('img/banner.png', function(){
+    whenHeroMediaReady(function(){
       var tl = gsap.timeline({ defaults: { ease: EASE.out } });
       tl.to(bg, {
           clipPath: 'inset(0% 0 0 0)', scale: 1, duration: 1.4, ease: EASE.outStrong,
@@ -1715,32 +2198,9 @@
     });
   }
 
-  /* ============================================================
-     HERO — restrained scroll-linked parallax (no pinning)
-  ============================================================ */
-  function initHeroScroll(){
-    var hero = document.querySelector('.hero');
-    var bg = hero ? hero.querySelector('[data-hero="bg"]') : null;
-    var copy = hero ? hero.querySelector('.hero-copy') : null;
-    if (!hero || !bg) return;
-
-    ScrollTrigger.matchMedia({
-      '(min-width: 769px)': function(){
-        gsap.timeline({
-          scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: .6 }
-        })
-        .to(bg, { yPercent: 8, scale: 1.04, ease: 'none' }, 0)
-        .to(copy, { y: -40, opacity: .35, ease: 'none' }, 0);
-      },
-      '(max-width: 768px)': function(){
-        gsap.timeline({
-          scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: .6 }
-        })
-        .to(bg, { yPercent: 4, scale: 1.02, ease: 'none' }, 0)
-        .to(copy, { opacity: .55, ease: 'none' }, 0);
-      }
-    });
-  }
+  /* The hero's scroll behaviour is owned entirely by the scroll-scene module
+     near the top of the file — it is scroll-position-driven rather than
+     scrubbed, so no ScrollTrigger timeline is attached to the hero here. */
 
   /* ============================================================
      GLOBAL TEXT REVEAL SYSTEM
@@ -2105,7 +2565,6 @@
   ============================================================ */
   function boot(){
     initHeroIntro();
-    initHeroScroll();
     initTextReveals();
     initCategoryCards();
     initIndustriesBanner();
