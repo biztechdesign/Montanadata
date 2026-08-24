@@ -30,6 +30,7 @@
     --ivory:#FAF8F5;
     --stone:#E6E0D9;
     --sand:#F3EEE7;
+    --teal-tint:#E8F3F4; /* light teal-tinted section background, page/index1 only */
 
     --walnut-04: rgba(49,37,28,.04);
     --walnut-08: rgba(49,37,28,.08);
@@ -133,7 +134,7 @@
   }
   body{
     margin:0;
-    background:var(--white);
+    background:var(--teal-tint);
     color:var(--charcoal);
     font-family:var(--font-body);
     font-size:var(--body);
@@ -163,7 +164,7 @@
   :focus-visible{ outline:2px solid var(--gold); outline-offset:3px; border-radius:2px; }
 
   .container{ max-width:var(--container); margin-inline:auto; padding-inline:var(--edge); }
-  .section{ padding-block:var(--sec-pad); background:var(--white); }
+  .section{ padding-block:var(--sec-pad); background:var(--teal-tint); }
   .section--alt{ background:var(--ivory); }
   .section--walnut{ background:var(--walnut); }
   .section-head{ max-width:680px; margin-bottom:clamp(36px,5vw,64px); }
@@ -692,7 +693,7 @@
   /* ============ TESTIMONIALS ============ */
   .testi-section{
     position:relative; overflow:hidden; padding-block:var(--sec-pad);
-    background:linear-gradient(180deg, rgba(188,140,83,.32) 0%, rgba(188,140,83,.14) 45%, var(--white) 100%);
+    background:linear-gradient(180deg, rgba(188,140,83,.32) 0%, rgba(188,140,83,.14) 45%, var(--teal-tint) 100%);
   }
   .testi-grid-bg{
     position:absolute; inset:0;
