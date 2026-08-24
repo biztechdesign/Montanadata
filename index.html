@@ -67,7 +67,7 @@
 
     --container: 1320px;
     --edge: clamp(20px, 5vw, 64px);
-    --sec-pad: 70px; /* 35px at <=620px, see mobile :root override below */
+    --sec-pad: clamp(48px, 6vw, 96px);
 
     /* ---- Hero scroll scene ----------------------------------------------
        Single source of truth for the scroll-driven hero. Everything the
@@ -86,17 +86,14 @@
     --hero-frame-radius: 26px;
     --hero-video-zoom: .06;         /* extra scale on the video at progress 0 */
 
-    /* Atmospheric background revealed as the video contracts. Copper-to-aqua
-       duotone lifted straight from the "M" logo mark (copper body sweeping
-       into its aqua tip) so the hero reads as the same material as the rest
-       of the brand, and so the navigation can carry the identical gradient.
-       Angle is close to horizontal so the full copper->aqua sweep is visible
-       across the short, wide header bar, not just the tall hero. */
-    --atmos-ink:    #4A2C12;
-    --atmos-walnut: #8C5A2E;
-    --atmos-bronze: #1D6670;
-    --atmos-deep:   #0E323C;
-    --atmos-gradient: linear-gradient(110deg,
+    /* Atmospheric background revealed as the video contracts. Walnut/bronze
+       family so the hero reads as the same material as the rest of the brand,
+       and so the navigation can carry the identical gradient. */
+    --atmos-ink:    #140D07;
+    --atmos-walnut: #2B1D11;
+    --atmos-bronze: #3E2A17;
+    --atmos-deep:   #110B06;
+    --atmos-gradient: linear-gradient(168deg,
       var(--atmos-ink)    0%,
       var(--atmos-walnut) 34%,
       var(--atmos-bronze) 62%,
@@ -268,10 +265,10 @@
     content:''; position:absolute; inset:0 0 -38px 0; z-index:-1; pointer-events:none;
     opacity:var(--header-glass, 0);
     background:linear-gradient(180deg,
-      rgba(74,44,18,.76) 0%,
-      rgba(140,90,46,.56) 44%,
-      rgba(140,90,46,.22) 74%,
-      rgba(140,90,46,0)   100%);
+      rgba(20,13,7,.76) 0%,
+      rgba(43,29,17,.56) 44%,
+      rgba(43,29,17,.22) 74%,
+      rgba(43,29,17,0)   100%);
     -webkit-backdrop-filter:blur(12px) saturate(125%);
     backdrop-filter:blur(12px) saturate(125%);
     -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 58%,transparent 100%);
@@ -411,10 +408,10 @@
   .hero-atmos{
     position:absolute; inset:0; z-index:1; pointer-events:none;
     background:
-      radial-gradient(78% 62% at 14% 4%,   rgba(140,90,46,.20), transparent 62%),
-      radial-gradient(72% 58% at 88% 18%,  rgba(29,102,112,.34),  transparent 64%),
-      radial-gradient(64% 54% at 62% 106%, rgba(71,135,141,.18), transparent 66%),
-      radial-gradient(48% 42% at 4% 94%,   rgba(74,44,18,.34),   transparent 70%),
+      radial-gradient(78% 62% at 14% 4%,   rgba(188,140,83,.20), transparent 62%),
+      radial-gradient(72% 58% at 88% 18%,  rgba(146,92,44,.34),  transparent 64%),
+      radial-gradient(64% 54% at 62% 106%, rgba(214,164,100,.18), transparent 66%),
+      radial-gradient(48% 42% at 4% 94%,   rgba(96,58,28,.34),   transparent 70%),
       var(--atmos-gradient);
   }
 
@@ -596,11 +593,6 @@
   @media (prefers-reduced-motion: reduce){ .mfr-track{ animation:none; } }
 
   /* ============ INDUSTRIES ============ */
-  /* Section itself stays at 0 so the banner's background image can cover the
-     full height of the section (edge to edge, no gap above/below). The
-     matching --sec-pad breathing room instead lives on .ind-banner-inner,
-     so the copy still sits the same distance from its section's edge as
-     every other section's content does from its own. */
   #industries.section{ padding-block:0; }
   .ind-banner{
     position:relative; overflow:hidden; display:flex;
@@ -610,7 +602,7 @@
   .ind-banner-bg{ position:absolute; inset:0; background-size:cover; background-position:center; }
   .ind-banner-scrim{ display:none; }
   .ind-banner .container{ position:relative; z-index:1; width:100%; }
-  .ind-banner-inner{ display:flex; flex-direction:column; gap:36px; padding-block:var(--sec-pad); }
+  .ind-banner-inner{ display:flex; flex-direction:column; gap:36px; padding-block:56px 48px; }
   .ind-banner-copy{ display:flex; flex-direction:column; align-items:flex-start; gap:16px; max-width:560px; color:var(--walnut); text-align:left; }
   .ind-banner-copy .eyebrow{ margin-bottom:0; }
   .ind-banner-copy h2{ color:var(--walnut); }
@@ -648,7 +640,7 @@
   .ind-nav{ display:none; }
   @media (max-width:860px){
     .ind-banner{ min-height:auto; }
-    .ind-banner-inner{ gap:28px; }
+    .ind-banner-inner{ padding-block:40px 32px; gap:28px; }
   }
   @media (max-width:620px){
     .ind-card{ flex-basis:78vw; }
@@ -689,7 +681,7 @@
 
   /* ============ TESTIMONIALS ============ */
   .testi-section{
-    position:relative; overflow:hidden; padding-block:var(--sec-pad);
+    position:relative; overflow:hidden; padding-block:clamp(80px,10vw,140px);
     background:linear-gradient(180deg, rgba(188,140,83,.32) 0%, rgba(188,140,83,.14) 45%, var(--white) 100%);
   }
   .testi-grid-bg{
@@ -774,7 +766,7 @@
   .news-card > .text-link{ margin-top:auto; }
 
   /* ============ FINAL CTA ============ */
-  .final-cta{ position:relative; background:var(--walnut); color:var(--white); overflow:hidden; padding-block:var(--sec-pad); text-align:center; }
+  .final-cta{ position:relative; background:var(--walnut); color:var(--white); overflow:hidden; padding-block:96px; text-align:center; }
   .final-cta-grid{
     position:absolute; inset:0; transform-origin:top center;
     background-image:linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
@@ -789,7 +781,7 @@
 
   /* ============ FOOTER ============ */
   footer{ background:var(--espresso); color:rgba(255,255,255,.6); }
-  .footer-top{ padding-block:var(--sec-pad); display:grid; grid-template-columns:1.2fr 1fr 1fr 1.2fr; gap:44px; }
+  .footer-top{ padding-block:60px; display:grid; grid-template-columns:1.2fr 1fr 1fr 1.2fr; gap:44px; }
   .foot-heading{ font-family:var(--font-display); font-size:20px; font-weight:700; color:var(--white); margin:0 0 10px; }
   .foot-divider{ width:70px; height:2px; background:var(--gold); border:0; margin:0 0 24px; }
   .footer-brand p{ color:rgba(255,255,255,.6); font-size:var(--body); margin-top:20px; line-height:1.6; max-width:320px; }
@@ -834,7 +826,7 @@
     .menu-toggle{ display:inline-flex; }
   }
   @media (max-width:900px){
-    .footer-top{ grid-template-columns:1fr 1fr; gap:36px 44px; }
+    .footer-top{ grid-template-columns:1fr 1fr; padding-block:48px; gap:36px 44px; }
   }
   @media (max-width:860px){
     .cat-grid, .news-grid{ grid-template-columns:1fr 1fr; }
@@ -848,12 +840,11 @@
       --h5: 1.125rem;  /* 18px */
       --h6: 1rem;      /* 16px */
       --body-lg: 1.0625rem; /* 17px */
-      --sec-pad: 35px;
     }
     .cat-grid, .news-grid, .stats-grid{ grid-template-columns:1fr; }
     .stat-item{ border-left:0 !important; border-top:1px solid var(--stone); }
     .stat-item:first-child{ border-top:0; }
-    .footer-top{ grid-template-columns:1fr; }
+    .footer-top{ grid-template-columns:1fr; padding-block:40px; }
     .hero-ctas .btn{ width:100%; }
     .hero-copy .lede{ font-size:var(--body); }
     footer .footer-bottom{ flex-direction:column; align-items:flex-start; gap:12px; }
@@ -2379,6 +2370,15 @@
         gsap.to(bg, {
           clipPath: 'inset(0% 0 0 0)', scale: 1, duration: DUR.slow * 1.1, ease: EASE.outStrong,
           onComplete: function(){ gsap.set(bg, { clearProps: 'clipPath' }); }
+        });
+      }
+    });
+
+    ScrollTrigger.matchMedia({
+      '(min-width: 769px)': function(){
+        gsap.to(bg, {
+          yPercent: 10, ease: 'none',
+          scrollTrigger: { trigger: banner, start: 'top bottom', end: 'bottom top', scrub: .6 }
         });
       }
     });
